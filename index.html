@@ -1,0 +1,233 @@
+<html>
+
+<head>
+    <title>
+        Chatter Box
+    </title>
+    <link href="https://fonts.googleapis.com/css?family=Lalezar|Spartan|Righteous&display=swap" rel="stylesheet">
+    <script src="http://code.jquery.com/jquery-latest.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body {
+            margin-top: 80px;
+            background-color: lightslategrey;
+        }
+
+        #messageArea {
+            display: none;
+            padding-left: 25px;
+        }
+
+        #messageAreaText {
+            display: none;
+        }
+        #messageAreaTop {
+            display: none;
+        }
+        #onlineUsers {
+            display: none;
+        }
+
+        #buttonLogin {
+            background-color: #4267B2;
+            border-width: none  ;
+            border-color: white;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            border-radius: 6px;
+            width: 10%;
+            height: 55px;
+        }
+
+        #buttonMsgs {
+            background-color: #4267B2;
+            border-width: none  ;
+            border-color: white;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 18px;
+            margin: 4px 2px;
+            border-radius: 8px;
+        }
+
+        .textarea {
+            width: 95%;
+            height: 55px;
+            padding: 1px 5px;
+            margin-left: 2.5%;
+            box-sizing: border-box;
+            border: 2px solid #000;
+            border-radius: 4px;
+            background-color: #f8f8f8;
+            resize: none;
+        }
+
+        .textbox {
+            width: 10%;
+            height: 55px;
+            padding: 1px 5px;
+            box-sizing: border-box;
+            border: 2px solid #000;
+            border-radius: 4px;
+            background-color: #f8f8f8;
+            resize: none;
+        }
+
+        .split {
+            height: 100%;
+            position: fixed;
+            z-index: 1;
+            top: 0;
+            overflow-x: hidden;
+            padding-top: 20px;
+        }
+
+        .left {
+            left: 0;
+            width: 16%;
+            height: 100%;
+            background-color: #4267B2;
+        }
+
+        /* Control the right side */
+        .right {
+            right: 0;
+            width: 84%;
+            height: 80%;
+            background-color:white;
+        }
+
+        .bottom {
+            left: 0;
+            margin-top: 45%;
+            margin-left: 16%;
+            width: 84%;
+            height: 20%;
+            background-color: #4267B2;
+        }
+           </style>
+</head>
+
+<body>
+    <div id="userFormArea" style="text-align: center;margin-top:13%;">
+        <form id="userForm">
+            <div>
+                    <h1 style="font-family:Lalezar;font-size:72px;color: white;"><u>Join</u></h2>
+                    <input id="username" class="textbox" placeholder="User Name" style="font-size: 22px;font-family:Lalezar;color: black ;">
+                    <br>
+                    <input type="submit" id="buttonLogin" value="Sign In" name="Enter">
+            </div>
+        </form>
+    </div>
+
+       <div id="messageArea" class="split left">
+        <h2 style="font-family:Righteous;font-size: 28px;color: rgb(26, 24, 24);">Online users</h2>
+        <ul id="users" style="font-family:Spartan;font-size:small;color:white;margin-top:20px;"></ul>
+    </div>
+
+    <div id="onlineUsers" class="split right">
+        <div class="chat" id="chat" style="font-family:Spartan;font-size:small;margin-left: 10px;"></div>
+    </div>
+    <div id="messageAreaText" class="split bottom">
+        <form id="messageForm">
+            <label style="font-family:Lalezar;font-size: 24px;color: white;">Enter Message</label><br>
+            <textarea class="textarea" id="message" style="font-family:Lalezar;font-size: medium;color: black;"></textarea>
+            <br>
+            <div style="text-align: center;">
+                <input type="submit" id="buttonMsgs" value="Send Message" name="messageNow">
+            </div>
+    </div>
+    </div>
+    </form>
+    </div>
+    </div>
+    </div>
+    <script>
+        $(function () {
+            var socket = io.connect();
+            var $messageForm = $('#messageForm');
+            var $message = $('#message');
+            var $chat = $('#chat');
+            var $messageArea = $('#messageArea');
+            var $messageAreaText = $('#messageAreaText');
+            var $onlineUsers = $('#onlineUsers');
+            var $userFormArea = $('#userFormArea');
+            var $userForm = $('#userForm');
+            var $users = $('#users');
+            var $username = $('#username');
+            var $buttonLogin = $('#buttonLogin');
+            var $buttonMsgs = $('#buttonMsgs');
+            var $messageAreaTop = $('#messageAreaTop')
+
+
+
+            $userForm.submit(function (e) {
+                e.preventDefault();
+                socket.emit('new user', $username.val(), function (data) {
+                    if (document.getElementById("username").value != "") {
+                        $userFormArea.hide();
+                        $messageArea.show();
+                        $messageAreaText.show();
+                        $onlineUsers.show();
+                        $messageAreaTop.show();
+                    }
+                    $username.val('');
+                });
+
+
+            });
+
+
+
+            $messageForm.submit(function (e) {
+                e.preventDefault();
+                socket.emit('send message', $message.val());
+                $message.val('');
+
+            });
+            socket.on('new message', function (data) {
+                $chat.append('<div class="well"><strong>' + data.user + '</strong> :' + data.msg + '</div>');
+            });
+            socket.on('get users', function (data) {
+                var html = '';
+                for (i = 0; i < data.length; i++) {
+                    html += '<li class="list-group-item">' + data[i] + '</li>';
+                }
+                $users.html(html);
+            });
+
+            $(() => {
+                $("#buttonMsgs").click(() => {
+                    sendMessage({
+                        $messageArea: $("#messageArea").val()
+                    });
+                });
+                getMessages()
+            });
+
+
+
+            function getMessages() {
+                $.get('http://localhost:3000', (data) => {
+                    data.forEach(addMessages);
+                });
+            };
+
+           
+
+            function sendMessage(message) {
+                $.post('http://localhost:3000', message)
+            };
+        });
+    </script>
+</body>
+
+</html>
